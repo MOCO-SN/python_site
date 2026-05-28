@@ -17,8 +17,8 @@ if not PANEL_BASE_URL:
 
 app = FastAPI(title=APP_NAME)
 
-templates = Jinja2Templates(directory="python_site/templates")
-app.mount("/static", StaticFiles(directory="python_site/static"), name="static")
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class CreateOrderIn(BaseModel):
@@ -54,15 +54,22 @@ def store(request: Request, telegram_id: str = ""):
 
 @app.get("/api/plans")
 def plans():
-    # Use GreedPanel store.php to render plans? Instead, read from DB is not possible from here.
-    # Minimal approach: call the GreedPanel store.html and parse? Not robust.
-    # Therefore, we expose a small JSON bridge by calling a dedicated API is not present.
-    # As a practical implementation, we call GreedPanel webapp store.php? The response is HTML.
-    # We'll return an error instructing you to add an API if you want dynamic plans.
-    raise HTTPException(
-        501,
-        "plans endpoint not implemented. Add /api endpoint in GreedPanel or provide a static plans list.",
-    )
+    # Minimal static bridge to make the UI work.
+    # Replace this list with your real GreedPanel plan IDs.
+    # NOTE: amount/currency are handled by GreedPanel during create_order.php.
+    return {
+        "success": True,
+        "plans": [
+            {
+                "id": "1",
+                "name": "Plan 1",
+                "price": "₹499",
+                "days": 30,
+                "desc": "",
+            }
+        ],
+    }
+
 
 
 @app.post("/api/pay/create-order")

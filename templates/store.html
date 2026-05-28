@@ -81,34 +81,45 @@
     // Load plans by embedding the GreedPanel Telegram store HTML and extracting buttons is brittle.
     // Instead, we provide a minimal static plan loader: you can edit this list or wire GreedPanel DB to an API.
     // For now, read plans by asking you to open GreedPanel store once and copy plan IDs.
-    // Example placeholders:
-    const plansList = [
-      // {id: 1, name: 'Plan 1', price: '₹499', days: 30, desc: '...'}
-    ];
-
-    function renderFallbackPlans(){
+    function renderPlans(plans){
       const el = document.getElementById('plans');
-      if (plansList.length === 0){
+      if (!plans || plans.length === 0){
         el.innerHTML = `
           <div style="border:1px solid #2b2f36;border-radius:14px;padding:14px;background:#0b0f16;opacity:.95;color:#fff">
             <div style="font-weight:800;margin-bottom:8px">Plans not configured</div>
-            <div style="opacity:.85;font-size:13px">Add plan IDs/names in <b>python_site/templates/store.html</b> → <code>plansList</code>, or request me to add a <code>/api/plans</code> endpoint to GreedPanel.</div>
+            <div style="opacity:.85;font-size:13px">Configure plans in <b>python_site/app.py</b> → <code>/api/plans</code>.</div>
           </div>`;
         return;
       }
-      el.innerHTML = plansList.map(p => `
+      el.innerHTML = plans.map(p => `
         <div style="border:1px solid #2b2f36;border-radius:14px;padding:14px;background:#0b0f16;opacity:.95;color:#fff">
           <div style="font-weight:900;margin-bottom:6px">${p.name}</div>
           <div style="opacity:.85;font-size:13px;margin-bottom:10px">${p.days} days • ${p.price}</div>
           <div style="display:flex;gap:10px">
-            <button style="cursor:pointer;background:#00FF87;border:0;color:#071108;font-weight:900;padding:10px 12px;border-radius:12px" onclick="buyPlan(${p.id})">Purchase</button>
+            <button style="cursor:pointer;background:#00FF87;border:0;color:#071108;font-weight:900;padding:10px 12px;border-radius:12px" onclick="buyPlan('${p.id}')">Purchase</button>
           </div>
         </div>
       `).join('');
     }
 
-    renderFallbackPlans();
+    async function loadPlans(){
+      try{
+        const res = await fetch(APP_BASE_URL + '/api/plans');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to load plans');
+        renderPlans(data.plans);
+      }catch(e){
+        document.getElementById('plans').innerHTML = `
+          <div style="border:1px solid #2b2f36;border-radius:14px;padding:14px;background:#0b0f16;opacity:.95;color:#fff">
+            <div style="font-weight:800;margin-bottom:8px">Could not load plans</div>
+            <div style="opacity:.85;font-size:13px">${String(e.message || e)}</div>
+          </div>`;
+      }
+    }
+
+    loadPlans();
   </script>
+
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </body>
