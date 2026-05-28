@@ -60,11 +60,39 @@ def plans():
     return {
         "success": True,
         "plans": [
-            {
+             {
                 "id": "1",
                 "name": "Plan 1",
+                "price": "₹60",
+                "days": 1,
+                "desc": "",
+            },
+            {
+                "id": "2",
+                "name": "Plan 2",
+                "price": "₹160",
+                "days": 3,
+                "desc": "",
+            },
+              {
+                "id": "3",
+                "name": "Plan 3",
+                "price": "₹249",
+                "days": 15,
+                "desc": "",
+            },
+              {
+                "id": "4",
+                "name": "Plan 4",
                 "price": "₹499",
                 "days": 30,
+                "desc": "",
+            },
+             {
+                "id": "5",
+                "name": "Plan 5",
+                "price": "₹999",
+                "days": 60,
                 "desc": "",
             }
         ],
