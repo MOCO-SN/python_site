@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ app_name }} | Keys</title>
+  <link rel="stylesheet" href="/static/webapp.css" />
+  <style>
+    .box{border:1px solid #2b2f36;border-radius:14px;padding:14px;background:#0b0f16;color:#fff}
+    .muted{opacity:.85;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="page-wrap" style="padding:24px">
+    <div class="content">
+      <div class="page-header" style="margin-bottom:16px">
+        <div>
+          <div class="page-title">My Keys</div>
+          <div class="page-sub">View your purchased licenses</div>
+        </div>
+      </div>
+
+      {% if message %}
+        <div class="box" style="margin-bottom:16px">
+          {{ message }}
+        </div>
+      {% endif %}
+
+      {% if telegram_id %}
+        <div class="box">
+          <div class="muted" style="margin-bottom:10px">Loaded from GreedPanel webapp</div>
+          <iframe
+            src="{{ mykeys_url }}"
+            style="width:100%;height:700px;border:0;background:#0b0f16;border-radius:12px"
+          ></iframe>
+        </div>
+      {% else %}
+        <div class="box">
+          <div style="font-weight:900;margin-bottom:8px">Missing telegram_id</div>
+          <div class="muted">Open: <code>/keys?telegram_id=YOUR_TELEGRAM_ID</code></div>
+        </div>
+      {% endif %}
+
+      <div style="margin-top:16px" class="muted">
+        After purchase, redirect goes to <code>/keys</code> automatically.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

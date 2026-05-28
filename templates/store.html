@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ app_name }} | Store</title>
+  <link rel="stylesheet" href="/static/webapp.css" />
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="content">
+      <div class="page-header">
+        <div class="page-title">Store</div>
+        <div class="page-sub">Purchase a license</div>
+      </div>
+
+      <div style="margin:14px 0">
+        <label style="font-weight:700;display:block;margin-bottom:6px">Telegram ID (required)</label>
+        <input id="telegramId" placeholder="e.g. 123456789" style="width:100%;padding:10px;border-radius:10px;border:1px solid #2b2f36;background:#0b0f16;color:#fff" value="{{ telegram_id }}" />
+        <div style="opacity:.8;font-size:12px;margin-top:6px">This Python site reuses GreedPanel’s existing Telegram payment flow, so it needs the same telegram_id.</div>
+      </div>
+
+      <div id="plans" style="display:grid;gap:14px"></div>
+
+      <div id="status" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <script>
+    const PANEL_BASE_URL = "{{ panel_base_url }}";
+    const APP_BASE_URL = window.location.origin;
+
+    async function apiPost(endpoint, data = {}) {
+      const res = await fetch(APP_BASE_URL + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    }
+
+    function showStatus(msg, type='info') {
+      document.getElementById('status').innerHTML = `<div style="padding:10px;border-radius:10px;background:#141824;border:1px solid #2b2f36;color:#fff;opacity:.95">${msg}</div>`;
+    }
+
+    function buyPlan(planId) {
+      const telegramId = document.getElementById('telegramId').value.trim();
+      if (!telegramId) return showStatus('Enter telegram_id first', 'danger');
+
+      document.getElementById('status').textContent = 'Creating order...';
+
+      apiPost('/api/pay/create-order', { plan_id: String(planId), telegram_id: String(telegramId) })
+        .then(r => {
+          if (!r.success) throw new Error(r.error || 'Failed');
+          // Razorpay checkout: use config returned by PHP.
+          const c = r.config;
+
+          c.handler = async function(res) {
+            document.getElementById('status').textContent = 'Verifying payment...';
+            const v = await apiPost('/api/pay/verify', {
+              razorpay_order_id: res.razorpay_order_id,
+              razorpay_payment_id: res.razorpay_payment_id,
+              razorpay_signature: res.razorpay_signature
+            });
+            if (!v.success) {
+              showStatus('Verification failed: ' + (v.error || 'Unknown'), 'danger');
+              return;
+            }
+            showStatus('Payment successful! Redirecting...');
+            setTimeout(() => {
+              window.location.href = '/keys?telegram_id=' + encodeURIComponent(telegramId);
+            }, 1200);
+          };
+
+          c.modal = { ondismiss: function(){ showStatus('Payment cancelled'); } };
+          new Razorpay(c).open();
+        })
+        .catch(e => showStatus(String(e.message || e), 'danger'));
+    }
+
+    // Load plans by embedding the GreedPanel Telegram store HTML and extracting buttons is brittle.
+    // Instead, we provide a minimal static plan loader: you can edit this list or wire GreedPanel DB to an API.
+    // For now, read plans by asking you to open GreedPanel store once and copy plan IDs.
+    // Example placeholders:
+    const plansList = [
+      // {id: 1, name: 'Plan 1', price: '₹499', days: 30, desc: '...'}
+    ];
+
+    function renderFallbackPlans(){
+      const el = document.getElementById('plans');
+      if (plansList.length === 0){
+        el.innerHTML = `
+          <div style="border:1px solid #2b2f36;border-radius:14px;padding:14px;background:#0b0f16;opacity:.95;color:#fff">
+            <div style="font-weight:800;margin-bottom:8px">Plans not configured</div>
+            <div style="opacity:.85;font-size:13px">Add plan IDs/names in <b>python_site/templates/store.html</b> → <code>plansList</code>, or request me to add a <code>/api/plans</code> endpoint to GreedPanel.</div>
+          </div>`;
+        return;
+      }
+      el.innerHTML = plansList.map(p => `
+        <div style="border:1px solid #2b2f36;border-radius:14px;padding:14px;background:#0b0f16;opacity:.95;color:#fff">
+          <div style="font-weight:900;margin-bottom:6px">${p.name}</div>
+          <div style="opacity:.85;font-size:13px;margin-bottom:10px">${p.days} days • ${p.price}</div>
+          <div style="display:flex;gap:10px">
+            <button style="cursor:pointer;background:#00FF87;border:0;color:#071108;font-weight:900;padding:10px 12px;border-radius:12px" onclick="buyPlan(${p.id})">Purchase</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    renderFallbackPlans();
+  </script>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</body>
+</html>
+
